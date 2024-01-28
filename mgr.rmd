@@ -1,0 +1,394 @@
+
+```{r}
+#dane skanowane
+dane<-readRDS("dataCPI.RDS")
+dane
+
+
+#załadowanie bibliotek
+library("ggplot2")
+library("PriceIndices")
+
+dane_wykres<-dane
+dane_wykres$owoce<-"1"
+dane_wykres[order(dane_wykres$prices),]
+
+#wykres dla wiśni
+cherries<-dplyr::filter(dane_wykres, dane_wykres$prodID=="Cherries")
+
+#wykres-histogram cen
+frame.c<-ggplot(dane_wykres, aes(prices))
+frame.c+geom_histogram(bins=20,col="black",fill="chartreuse3")+labs(title="Histogram cen",x="Cena",y="Liczebność")+facet_grid(dane_wykres$owoce~.)
+
+#wykres-Histogram ilości
+frame.q1<-ggplot(cherries, aes(time, prices, size=quantities,color="blue"))
+frame.q1+geom_point(color="deeppink4")+labs(title="Histogram ilości",x="Czas",y="Cena")
+
+
+
+#przygotowanie danych skanowanych pod wyliczenie indeksów
+owoce<-data_preparing(data=dane,
+                     time="time",
+                     prices="prices",
+                     quantities="quantities",
+                     description = "prodID"
+                    )
+
+
+owoce_cd<-data_matching(data=owoce,
+                    start="2017-12",
+                    end="2021-11",
+                    interval=TRUE,
+                    codeIN=FALSE,
+                    codeOUT=FALSE,
+                    description = TRUE,
+                    onlydescription = TRUE,
+                    precision=1
+                    )
+
+owoce_cd
+
+#filtrowanie danych
+subset_owoce1<-data_filtering(owoce_cd, start="2017-12",end="2018-12",
+                  interval=TRUE)
+
+subset_owoce2<-data_filtering(owoce_cd, start="2020-11",end="2021-11",
+                  interval=TRUE)
+
+#wyliczenie indeksów
+indeksy_owoce1<-price_indices(subset_owoce1,start="2017-12",end="2018-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13),
+              interval=TRUE)
+
+#wyliczenie indeksów
+indeksy_owoce2<-price_indices(subset_owoce2,start="2020-11",end="2021-11",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13),
+              interval=TRUE)
+
+
+
+indeksy_owoce_w1<-compare_indices(subset_owoce1,start="2017-12",end="2018-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13))
+
+indeksy_owoce_w2<-compare_indices(subset_owoce2,start="2020-11",end="2021-11",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13))
+
+```
+
+```{r}
+#dane skrapowane
+#install.packages("PriceIndices")
+library("PriceIndices")
+dane_scr1<-milk
+dane_scr2<-sugar
+dane_scr3<-coffee
+
+#podstawowe informacje o zbiorach danych
+unique(dane_scr1$description)
+unique(dane_scr$prodID)
+unique(dane_scr$retID)
+
+#przypisanie ilości = 1 dla danych
+dane_scr3$quantities<-1
+laspeyres(milk, start="2018-12",end="2019-12")
+laspeyres(dane_scr3, start="2018-12",end="2019-12")
+
+
+
+#Opis próby badawczej
+library("ggplot2")
+frame.c<-ggplot(dane_scr3, aes(prices))
+frame.c+geom_histogram(bins=20,col="black",fill="brown")+labs(title="Histogram cen",x="Cena",y="Liczebność")+facet_grid(dane_scr3$description~.)
+
+frame.q<-ggplot(dane_scr3, aes(quantities))
+frame.q+geom_histogram(bins=10,col="black",fill="orange")+labs(title="Histogram ilości",x="ilość",y="Liczebność")+facet_grid(dane_scr3$description~.)
+
+sum(dane_scr3$description=="instant coffee")
+
+ggplot(dane_scr3, aes(prices,quantities))+geom_point()
+
+
+#prygotowanie danych pod wyliczenie indeksów
+mleko_dp<-data_preparing(data=dane_scr1,
+                     time="time",
+                     prices="prices",
+                     quantities="quantities",
+                     description = "description",
+                     codeIN="prodID",
+                     retID="retID")
+
+mleko_dm<-data_matching(data=mleko_dp,
+                    start="2018-12",
+                    end="2019-12",
+                    codeIN=TRUE,
+                    codeOUT=FALSE,
+                    description = TRUE,
+                    precision=1,
+                    )
+
+cukier_dp<-data_preparing(data=dane_scr2,
+                     time="time",
+                     prices="prices",
+                     quantities="quantities",
+                     description = "description",
+                     codeIN="prodID",
+                     retID="retID")
+
+cukier_dm<-data_matching(data=cukier_dp,
+                    start="2018-12",
+                    end="2019-12",
+                    codeIN=TRUE,
+                    codeOUT=FALSE,
+                    description = TRUE,
+                    precision=1,
+                    )
+
+
+kawa_dp<-data_preparing(data=dane_scr3,
+                     time="time",
+                     prices="prices",
+                     quantities="quantities",
+                     description = "description",
+                     codeIN="prodID",
+                     retID="retID")
+
+kawa_dm<-data_matching(data=kawa_dp,
+                    start="2018-12",
+                    end="2019-12",
+                    codeIN=TRUE,
+                    codeOUT=FALSE,
+                    description = TRUE,
+                    precision=1,
+                    )
+
+
+#filtr ekstremalnych zmian cen
+subset1<-data_filtering(dane_scr1, start="2018-12",end="2019-12",
+                  filters=c("extremeprices"),
+                  pquantiles=c(0.01,0.98),interval=TRUE)
+
+subset2<-data_filtering(dane_scr2, start="2018-12",end="2019-12",
+                  filters=c("extremeprices"),
+                  pquantiles=c(0.01,0.98),interval=TRUE)
+
+subset3<-data_filtering(dane_scr3, start="2018-12",end="2019-12",
+                  filters=c("extremeprices"),
+                  pquantiles=c(0.01,0.98),interval=TRUE)
+
+
+
+price_index(subset1,start="2018-12",end="2019-12",formula="fisher",interval=TRUE)
+
+indeksy<-c("carli","laspeyres","fisher")
+
+#install.packages("dplyr")
+library("dplyr")
+dplyr::bind_cols(ramki)
+
+subset3[order(subset3$prices, decreasing=TRUE), ]
+
+#wyliczenie indeksów
+indeksy1<-price_indices(subset1,start="2018-12",end="2019-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13),
+              interval=TRUE)
+
+indeksy2<-price_indices(subset2,start="2018-12",end="2019-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13),
+              interval=TRUE)
+
+indeksy3<-price_indices(subset3,start="2018-12",end="2019-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13),
+              interval=TRUE)
+
+laspeyres(subset3,start="2018-12",end="2019-10")
+
+
+indeksy_w1<-compare_indices(subset1,start="2018-12",end="2019-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13))
+
+indeksy_w2<-compare_indices(subset2,start="2018-12",end="2019-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13))
+
+indeksy_w3<-compare_indices(subset3,start="2018-12",end="2019-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13))
+
+
+
+
+count(kawa_dm, "prodID")
+
+head(mleko_dm)
+
+a<-carli(kawa_dm, start="2018-12", end="2019-12", interval=FALSE)
+b<-laspeyres(kawa_dm, start="2018-12", end="2019-12", interval=FALSE)
+c<-fisher(kawa_dm, start="2018-12", end="2019-12",interval=FALSE)
+d<-geks(kawa_dm, start="2018-12", end="2019-12")
+
+```
+
+```{r}
+#dane elektroniczne
+library("readxl")
+dane_rower_trek<-data.frame()
+for (n in 1:7) {
+  dane2<-read_xlsx("ROWERtrekingowytradewatch.xlsx", sheet = n)
+  dane3<-data.frame(dane2$Miesiąc, "Rower trekingowy ",dane2$Śr.cena, dane2$Transakcje)
+  dane3[2]<- paste("Rower trekingowy",n)
+  colnames(dane3)[1]<-"time"
+  colnames(dane3)[2]<-"prodID"
+  colnames(dane3)[3]<-"prices"
+  colnames(dane3)[4]<-"quantities"
+  dane_rower_trek<-rbind(dane_rower_trek,dane3)
+}
+dane_rower_trek
+head(dane_rower_trek)
+
+
+dane_rower_gorski<-data.frame()
+for (n in 1:7) {
+  dane2<-read_xlsx("ROWERgorskitradewatch.xlsx", sheet = n)
+  dane3<-data.frame(dane2$Miesiąc, "Rower gorski ",dane2$Śr.cena, dane2$Transakcje)
+  dane3[2]<- paste("Rower gorski",n)
+  colnames(dane3)[1]<-"time"
+  colnames(dane3)[2]<-"prodID"
+  colnames(dane3)[3]<-"prices"
+  colnames(dane3)[4]<-"quantities"
+  dane_rower_gorski<-rbind(dane_rower_gorski,dane3)
+}
+dane_rower_gorski
+
+
+
+dane_rower_dz<-data.frame()
+for (n in 1:7) {
+  dane2<-read_xlsx("ROWERdzieciecytradewatch.xlsx", sheet = n)
+  dane3<-data.frame(dane2$Miesiąc, "Rower dzieciecy ",dane2$Śr.cena, dane2$Transakcje)
+  dane3[2]<- paste("Rower dzieciecy",n)
+  colnames(dane3)[1]<-"time"
+  colnames(dane3)[2]<-"prodID"
+  colnames(dane3)[3]<-"prices"
+  colnames(dane3)[4]<-"quantities"
+  dane_rower_dz<-rbind(dane_rower_dz,dane3)
+}
+
+
+
+#obliczenia
+#dzieciecy
+dane_rower_dz$quantities[dane_rower_dz$quantities==0]<-NA
+
+#pominięcie braków danych
+dane_rower_dz2<-na.omit(dane_rower_dz)
+
+subset_rower_dz<-data_filtering(dane_rower_dz, start="2016-12",end="2018-12",
+                  filters=c("lowsales"),
+                  interval=TRUE)
+
+indeksy_rower_dz<-price_indices(dane_rower_dz2,start="2017-12",end="2018-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13),
+              interval=TRUE)
+
+#trekingowy
+dane_rower_trek$quantities[dane_rower_trek$quantities==0]<-NA
+
+#pominięcie braków danych
+dane_rower_trek2<-na.omit(dane_rower_trek)
+
+subset_rower_trek<-data_filtering(dane_rower_trek, start="2016-12",end="2018-12",
+                  filters=c("lowsales"),
+                  interval=TRUE)
+
+indeksy_rower_trek<-price_indices(dane_rower_trek2,start="2017-12",end="2018-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13),
+              interval=TRUE)
+
+
+#gorski
+dane_rower_gorski$quantities[dane_rower_gorski$quantities==0]<-NA
+
+#pominięcie braków danych
+dane_rower_gorski2<-na.omit(dane_rower_gorski)
+
+subset_rower_gorski<-data_filtering(dane_rower_gorski, start="2016-12",end="2018-12",
+                  filters=c("lowsales"),
+                  interval=TRUE)
+
+indeksy_rower_gorski<-price_indices(dane_rower_gorski2,start="2017-12",end="2018-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13),
+              interval=TRUE)
+
+
+indeksy_w_dz<-compare_indices(dane_rower_dz2,start="2017-12",end="2018-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13))
+
+indeksy_w_trek<-compare_indices(dane_rower_trek2,start="2017-12",end="2018-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13))
+
+indeksy_w_gorski<-compare_indices(dane_rower_gorski2,start="2017-12",end="2018-12",
+              bilateral=c("carli","laspeyres","fisher"),
+              fbmulti = c("geks"),
+              fbwindow = c(13))
+
+
+
+
+#przypisanie nazw modelu do danych
+dane_rower_dz3<-dane_rower_dz2
+dane_rower_dz3$cat<-substr(dane_rower_dz3$prodID,1,15)
+dane_rower_gorski3<-dane_rower_gorski2
+dane_rower_gorski3$cat<-substr(dane_rower_gorski3$prodID,1,12)
+dane_rower_trek3<-dane_rower_trek2
+dane_rower_trek3$cat<-substr(dane_rower_trek3$prodID,1,16)
+dane_rower_3<-rbind(dane_rower_dz3,dane_rower_gorski3,dane_rower_trek3)
+
+
+
+#wykres
+library("ggplot2")
+frame.c<-ggplot(dane_rower_3, aes(prices))
+frame.c+geom_histogram(bins=20,col="black",fill="cornflowerblue")+labs(title="Histogram cen",x="Cena",y="Liczebność")+facet_grid(dane_rower_3$cat~.)
+
+
+```
+
+
+```{r}
+library("PriceIndices")
+milk
+sugar
+coffee
+
+dataCOICOP
+
+```
+
